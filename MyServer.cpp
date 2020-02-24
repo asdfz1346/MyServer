@@ -140,11 +140,12 @@ void MyServer::main_loop(){
 			else {
 				pthread_mutex_lock(&clientset_mutex);
 				if(clientset.find(ev[i].data.fd) != clientset.end()){
+					pthread_mutex_unlock(&clientset_mutex);
 					pthread_mutex_lock(&clientlist_mutex);
 					clientlist.push_back(ev[i].data.fd);
 					pthread_mutex_unlock(&clientlist_mutex);
-				}
-				pthread_mutex_unlock(&clientset_mutex);	
+				}else
+					pthread_mutex_unlock(&clientset_mutex);	
 			}
 		}
 	}
@@ -153,31 +154,39 @@ void MyServer::main_loop(){
 
 
 void *MyServer::worker_thread_proc(void *args){
-	
+	int num = 0;	
 	MyServer *pthis =((ARG*)args)->p;
 	//StoC stoc;
 	char recv_buf[30];
 	char snd_buf[80];
 	while(pthis->nstop){
+		//sleep(1);
+		pthread_mutex_lock(&pthis->clientlist_mutex);
 		if(!pthis->clientlist.empty()){
+			num++;
+			printf("num:%d\n",num); 
 			memset(recv_buf,0,sizeof(char)*30);
 			memset(snd_buf, 0,sizeof(char)*80);
 			/*lock clientlist*/
 
-			pthread_mutex_lock(&pthis->clientlist_mutex);
 			int fd = pthis->clientlist.front();
 			pthis->clientlist.pop_front();
 			pthread_mutex_unlock(&pthis->clientlist_mutex);
-
+			
 			/*recv CtoS msg*/
 			recv(fd,&recv_buf,sizeof recv_buf,0);
 			CtoS ctos;
 			memset(&ctos,0,sizeof ctos);
 			memcpy(&ctos,recv_buf,sizeof(char)*30);
-			printf("cmd:%d\nparkid:%d\ncarid:%s\n",ctos.cmd,ctos.parkid,ctos.carid);
-			//
+			//printf("cmd:%dparkid:%dcarid:%s",ctos.cmd,ctos.parkid,ctos.carid);
 			StoC stoc;
 			memset(&stoc,0,sizeof stoc);
+			if(ctos.cmd==0){
+				pthread_mutex_lock(&pthis->clientset_mutex);
+				pthis->clientset.erase(fd);
+				pthread_mutex_unlock(&pthis->clientset_mutex);
+				shutdown(fd);
+			}
 			/*putin*/
 			if(ctos.cmd==PUTIN){
 				/*putin(1,'S3','S4');*/
@@ -191,27 +200,35 @@ void *MyServer::worker_thread_proc(void *args){
 					stoc.cmd =PUTINSUCCESS;
 					memcpy(snd_buf,&stoc,sizeof stoc);
 					send(fd,&snd_buf,sizeof snd_buf,0);
-					printf("query==0;\n");
 				}
 				else{
 					stoc.cmd =PUTINFAIL;
 					memcpy(snd_buf,&stoc,sizeof snd_buf);
 					send(fd,&snd_buf,sizeof snd_buf,0);
-					printf("query==1\n");
 				}
 
 				//sql_res = mysql_store_result(&m_sql);
 			}
 			if(ctos.cmd==PUTOUT){
-				//putout(1,'carid');
+				//putout(1,'parkid','carid');
 				std::string S1 = "call putout(";
 				std::string S2 = std::to_string(ctos.parkid);
 				std::string S3 = ctos.carid;
-
-
+				S1 = S1+",'"+S2+"','"+S3+"');";
+				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str())){
+					stoc.cmd = PUTOUTSUCCESS;
+					stoc.ordertime	=
+					stoc.intime 	= 
+					stoc.outtime	=
+				
+				}
+				else{}
 			}
 		}
-		else sleep(1);
+		else {
+			pthread_mutex_unlock(&pthis->clientlist_mutex);
+			sleep(1);
+		}
 	}
 	return NULL;
 }	

@@ -4,9 +4,8 @@
 #include <string.h>
 #include <string>
 int main(){
-	std::string S1 = "1";
-	std::string S2= "abcd"+S1;
-	std::cout << S2<<std::endl;
+	char snd_buf[10];
+	printf("%d",sizeof snd_buf);
 	return 0;
 
 

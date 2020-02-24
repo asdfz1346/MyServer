@@ -1,84 +1,50 @@
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <malloc.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/ioctl.h>
-#include <stdarg.h>
-#include <fcntl.h>
-#include <fcntl.h> 
-#include <string.h>
+#include"client.h"
 
-#define SERVERIP "127.0.0.1" 
-#define SERVERPORT 12345
 
- 	
-#define PUTIN 	1
-#define PUTOUT	2
 
-/*back value*/
-#define PUTINSUCCESS	1
-#define PUTINFAIL 	0	
-typedef struct msgtoServer{
-	int cmd;
-	int parkid;
-	char carid[8];
-	char tele[12];
-}CtoS;
-typedef struct msgtoClient{
-	int cmd;
-	char intime[20];
-	char outtime[20];
-	char ordertime[20];
-}StoC;
-
-int main(){
-	char snd_buf[30];
-	char rev_buf[65];
-	/*init ctos */
-	int client;
-	CtoS t;
-	memset(&t,0,sizeof t);
-	memcpy(t.carid,"025s67",8);	
-	t.cmd  = PUTIN;
-	t.parkid =1;	
-	/*init sockaddr_in */
+client::client(){}
+client::~client(){}
+int client::createsocket(const char * ip,const int port){
 	struct sockaddr_in s;
 	memset(&s,0,sizeof s);
-	s.sin_family = AF_INET;
-	s.sin_addr.s_addr = inet_addr(SERVERIP);
-	s.sin_port   = htons(SERVERPORT);
-	client = socket(AF_INET,SOCK_STREAM,0);
-
-	/*copy to snd_buf*/
-	memset(snd_buf,0,sizeof(char)*30);
-	memcpy(snd_buf,&t,sizeof snd_buf);
-	
-	/*connect and send*/
-	connect(client,(struct sockaddr *)&s,sizeof (struct sockaddr));
-	send(client,snd_buf,sizeof snd_buf,0);
-	printf("cmd:%d\nparkid:%d\ncarid:%s\n",t.cmd,t.parkid,t.carid);
-	
-	/*recv and prinft*/
-	memset(rev_buf,0,sizeof(char)*65);
-	recv(client,rev_buf,sizeof rev_buf,0);
-	StoC stoc;
-	memset(&stoc,0,sizeof(StoC));
-	memcpy(&stoc,rev_buf,sizeof stoc);
-	printf("recv cmd:%d\n",stoc.cmd);
-	if(stoc.cmd==PUTINSUCCESS)
-		printf("put in success;\n");
+	s.sin_family 		= AF_INET;
+	s.sin_addr.s_addr 	= inet_addr(ip);
+	s.sin_port		= htons(port);
+	int fd = socket(AF_INET,SOCK_STREAM,0);
+	if(connect(fd,(struct sockaddr *)&s,sizeof s)==-1)
+		printerror();
 	else
-		printf("fail;");
-	sleep(1111);
+		return fd;
+	return 0;
+	
+}
+int client::m_send(int fd,CtoS ctos){
+	
+	memset(snd_buf,0,SND_BUF_SIZE);
+	memcpy(snd_buf,&ctos,sizeof ctos);
+	int numofsend=0;
+	numofsend = send(fd,snd_buf,SND_BUF_SIZE,0);
+	if(numofsend==-1)
+		printerror();
+	else
+		return numofsend;
+	return -1;
+
+}
+StoC client::m_recv(int fd){
+	memset(rcv_buf,0,RCV_BUF_SIZE);
+	StoC stoc;
+	memset(&stoc,0,sizeof stoc);
+	if(recv(fd,rcv_buf,RCV_BUF_SIZE ,0)==-1)
+		printerror();
+	else{
+		memcpy(&stoc,rcv_buf,sizeof stoc);	
+	}
+	return stoc;
+
 }
 
-
-
+void client::printerror(){
+	printf("errno:%d\n",errno);
+	return;
+}

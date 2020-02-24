@@ -27,15 +27,14 @@
 #include <sys/stat.h>
 #include <memory>
 #include<string>
-
 #include<mysql/mysql.h>
-
 #define LISTEN_NUM 5
-#define THREAD_NUM 1
+#define THREAD_NUM 10
 #define PUTIN 1
 #define PUTOUT 2
 #define PUTINFAIL 0
 #define PUTINSUCCESS 1
+
 class MyServer{
 public:
 	MyServer();
