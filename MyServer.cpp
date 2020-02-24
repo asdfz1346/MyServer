@@ -171,42 +171,42 @@ void *MyServer::worker_thread_proc(void *args){
 
 			/*recv CtoS msg*/
 			recv(fd,&recv_buf,sizeof recv_buf,0);
-			CtoS rec;
-			memcpy(&rec,recv_buf,sizeof rec);
+			CtoS ctos;
+			memset(&ctos,0,sizeof ctos);
+			memcpy(&ctos,recv_buf,sizeof(char)*30);
+			printf("cmd:%d\nparkid:%d\ncarid:%s\n",ctos.cmd,ctos.parkid,ctos.carid);
 			//
-			StoC snd;
+			StoC stoc;
+			memset(&stoc,0,sizeof stoc);
 			/*putin*/
-			if(rec.cmd==PUTIN){
+			if(ctos.cmd==PUTIN){
 				/*putin(1,'S3','S4');*/
 				std::string S1 = "call putin(";
-				std::string S2 = std::to_string(rec.parkid);
-				std::string S3 = rec.carid;
-				std::string S4 = rec.tele;
+				std::string S2 = std::to_string(ctos.parkid);
+				std::string S3 = ctos.carid;
+				std::string S4 = ctos.tele;
 				S1 = S1+S2+",'"+S3+"','"+S4+"');";
 
 				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
-					memset(&snd,0,sizeof snd);
-					snd.cmd =PUTINSUCCESS;
-					memcpy(snd_buf,&rec,sizeof snd_buf);
+					stoc.cmd =PUTINSUCCESS;
+					memcpy(snd_buf,&stoc,sizeof stoc);
 					send(fd,&snd_buf,sizeof snd_buf,0);
-					printf("success\n");
+					printf("query==0;\n");
 				}
 				else{
-
-					memset(&snd,0,sizeof snd);
-					snd.cmd =PUTINFAIL;
-					memcpy(snd_buf,&rec,sizeof snd_buf);
+					stoc.cmd =PUTINFAIL;
+					memcpy(snd_buf,&stoc,sizeof snd_buf);
 					send(fd,&snd_buf,sizeof snd_buf,0);
-					printf("send '0' success\n");
+					printf("query==1\n");
 				}
 
 				//sql_res = mysql_store_result(&m_sql);
 			}
-			if(rec.cmd==PUTOUT){
+			if(ctos.cmd==PUTOUT){
 				//putout(1,'carid');
 				std::string S1 = "call putout(";
-				std::string S2 = std::to_string(rec.parkid);
-				std::string S3 = rec.carid;
+				std::string S2 = std::to_string(ctos.parkid);
+				std::string S3 = ctos.carid;
 
 
 			}

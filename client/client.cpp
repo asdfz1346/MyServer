@@ -25,7 +25,7 @@
 
 /*back value*/
 #define PUTINSUCCESS	1
-#define PUTINFAIL	2
+#define PUTINFAIL 	0	
 typedef struct msgtoServer{
 	int cmd;
 	int parkid;
@@ -45,7 +45,8 @@ int main(){
 	/*init ctos */
 	int client;
 	CtoS t;
-	memcpy(t.carid,"0234567",8);	
+	memset(&t,0,sizeof t);
+	memcpy(t.carid,"025s67",8);	
 	t.cmd  = PUTIN;
 	t.parkid =1;	
 	/*init sockaddr_in */
@@ -57,23 +58,26 @@ int main(){
 	client = socket(AF_INET,SOCK_STREAM,0);
 
 	/*copy to snd_buf*/
-	memset(snd_buf,0,sizeof snd_buf);
+	memset(snd_buf,0,sizeof(char)*30);
 	memcpy(snd_buf,&t,sizeof snd_buf);
 	
 	/*connect and send*/
 	connect(client,(struct sockaddr *)&s,sizeof (struct sockaddr));
 	send(client,snd_buf,sizeof snd_buf,0);
-	sleep(1);
-
+	printf("cmd:%d\nparkid:%d\ncarid:%s\n",t.cmd,t.parkid,t.carid);
+	
 	/*recv and prinft*/
+	memset(rev_buf,0,sizeof(char)*65);
 	recv(client,rev_buf,sizeof rev_buf,0);
 	StoC stoc;
+	memset(&stoc,0,sizeof(StoC));
 	memcpy(&stoc,rev_buf,sizeof stoc);
+	printf("recv cmd:%d\n",stoc.cmd);
 	if(stoc.cmd==PUTINSUCCESS)
-		printf("success;\n");
+		printf("put in success;\n");
 	else
 		printf("fail;");
-	return 0;
+	sleep(1111);
 }
 
 
