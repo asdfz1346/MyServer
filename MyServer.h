@@ -29,12 +29,18 @@
 #include<string>
 #include<mysql/mysql.h>
 #define LISTEN_NUM 5
-#define THREAD_NUM 10
+#define THREAD_NUM 1
+//ctos
 #define PUTIN 1
 #define PUTOUT 2
+#define ORDER 3
+//stoc
 #define PUTINFAIL 0
 #define PUTINSUCCESS 1
-
+#define PUTOUTSUCCESS 2
+#define PUTOUTFAIL  3	
+#define ORDERSUCCESS 4
+#define ORDERFAIL 	5
 class MyServer{
 public:
 	MyServer();

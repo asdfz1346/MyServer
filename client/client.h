@@ -33,11 +33,15 @@
 /*CtoS cmd*/
 #define PUTIN 1
 #define PUTOUT 2
+#define ORDER 3
 
 /*StoC cmd*/
 #define PUTINFAIL 0
 #define PUTINSUCCESS 1
-#define OUTPUTSUCCESS 2
+#define PUTOUTSUCCESS 2
+#define PUTOUTFAIL 3
+#define ORDERSUCCESS 4
+#define ORDERFAIL 5
 
 /*buf*/
 #define SND_BUF_SIZE 30
