@@ -28,6 +28,8 @@
 #include <memory>
 #include<string>
 #include<mysql/mysql.h>
+
+
 #define LISTEN_NUM 5
 #define THREAD_NUM 1
 //ctos
@@ -41,6 +43,25 @@
 #define PUTOUTFAIL  3	
 #define ORDERSUCCESS 4
 #define ORDERFAIL 	5
+
+#ifndef __STRUCT
+#define __STRUCT
+typedef struct msgtoServer{
+	int cmd;
+	int parkid;
+	char carid[8];
+	char tele[12];
+}CtoS;
+typedef struct msgtoClient{
+	int cmd;//0.入库失败，1.返回入库成功 2.出库时间
+	char intime[20];
+	char outtime[20];
+	char ordertime[20];
+
+}StoC;
+#endif
+
+
 class MyServer{
 public:
 	MyServer();

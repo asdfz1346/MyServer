@@ -1,23 +1,5 @@
 #include"MyServer.h"
 
-typedef struct msgtoServer{
-	int cmd;
-	int parkid;
-	char carid[8];
-	char tele[12];
-}CtoS;
-
-
-typedef struct msgtoClient{
-	int cmd;//0.入库失败，1.返回入库成功 2.出库时间
-	char intime[20];
-	char outtime[20];
-	char ordertime[20];
-
-}StoC;
-
-
-
 MyServer::MyServer(){}
 MyServer::~MyServer(){}
 
@@ -157,15 +139,13 @@ void *MyServer::worker_thread_proc(void *args){
 
 	MyServer *pthis =((ARG*)args)->p;
 	//StoC stoc;
-	char recv_buf[30];
+	char rcv_buf[30];
 	char snd_buf[80];
 	while(pthis->nstop){
 		//sleep(1);
 		pthread_mutex_lock(&pthis->clientlist_mutex);
 		if(!pthis->clientlist.empty()){
-			
-			 
-			memset(recv_buf,0,sizeof(char)*30);
+			memset(rcv_buf,0,sizeof(char)*30);
 			memset(snd_buf, 0,sizeof(char)*80);
 			/*lock clientlist*/
 
@@ -174,10 +154,10 @@ void *MyServer::worker_thread_proc(void *args){
 			pthread_mutex_unlock(&pthis->clientlist_mutex);
 			
 			/*recv CtoS msg*/
-			recv(fd,&recv_buf,sizeof recv_buf,0);
+			recv(fd,&rcv_buf,sizeof rcv_buf,0);
 			CtoS ctos;
 			memset(&ctos,0,sizeof ctos);
-			memcpy(&ctos,recv_buf,sizeof(char)*30);
+			memcpy(&ctos,rcv_buf,sizeof(char)*30);
 			//printf("cmd:%dparkid:%dcarid:%s",ctos.cmd,ctos.parkid,ctos.carid);
 			StoC stoc;
 			memset(&stoc,0,sizeof stoc);
@@ -258,7 +238,7 @@ void *MyServer::worker_thread_proc(void *args){
 		}
 		else {
 			pthread_mutex_unlock(&pthis->clientlist_mutex);
-			sleep(1);
+			sleep(0.5);
 		}
 	}
 	return NULL;
