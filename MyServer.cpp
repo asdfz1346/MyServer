@@ -103,13 +103,8 @@ void *MyServer::accept_thread_proc(void *args){
 	return NULL;
 }
 
-void MyServer::main_loop(){
-	MYSQL *m_conn = mysql_init(NULL);
-	m_sql = mysql_real_connect(m_conn,"localhost","root","a123456","PARKING",0,NULL,0);
-	if(m_sql)
-		printf("connect mysql success\n");
-	else
-		printf("connect mysql fail\n");	
+
+void MyServer::main_loop(){	
 	while(nstop){
 		struct 	epoll_event ev[1024];
 		int n = epoll_wait(epollfd,ev,1024,10);
@@ -145,6 +140,13 @@ void *MyServer::worker_thread_proc(void *args){
 		//sleep(1);
 		pthread_mutex_lock(&pthis->clientlist_mutex);
 		if(!pthis->clientlist.empty()){
+       			MYSQL *m_conn = mysql_init(NULL);
+	        	MYSQL *m_sql = mysql_real_connect(m_conn,"localhost","root","a123456","PARKING",0,NULL,0);
+		        if(m_sql)
+				printf("connect mysql success\n");
+		        else
+			        printf("connect mysql fail\n");
+
 			memset(rcv_buf,0,sizeof(char)*30);
 			memset(snd_buf, 0,sizeof(char)*80);
 			/*lock clientlist*/
@@ -176,7 +178,7 @@ void *MyServer::worker_thread_proc(void *args){
 				std::string S4 = ctos.tele;
 				S1 = S1+S2+",'"+S3+"','"+S4+"');";
 
-				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+				if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){
 					stoc.cmd =PUTINSUCCESS;
 					memcpy(snd_buf,&stoc,sizeof stoc);
 					send(fd,&snd_buf,sizeof snd_buf,0);
@@ -197,10 +199,10 @@ void *MyServer::worker_thread_proc(void *args){
 				std::string S2 = std::to_string(ctos.parkid);
 				std::string S3 = ctos.carid;
 				S1 = S1+S2+",'"+S3+"');";
-				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+				if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){
 					MYSQL_RES *result;
 					MYSQL_ROW row;
-					result = mysql_store_result(pthis->m_sql);
+					result = mysql_store_result(m_sql);
 					if(result!=NULL) {
 						//int num;
 						//num= mysql_num_fields(result);	
@@ -232,7 +234,7 @@ void *MyServer::worker_thread_proc(void *args){
                                 std::string S3 = ctos.carid;
                                 std::string S4 = ctos.tele;
                                 S1 = S1+S2+",'"+S3+"','"+S4+"');";
-				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){  
+				if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){  
 					stoc.cmd = ORDERSUCCESS;
 				}else
 					stoc.cmd = ORDERFAIL;
@@ -245,7 +247,7 @@ void *MyServer::worker_thread_proc(void *args){
 				std::string S2 =std::to_string(ctos.parkid);
 				std::string S3 = ");";
 				S1 = S1+S2+S3;
-				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+				if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){
 					stoc.cmd = RESETSUCCESS;
 				}else
 					stoc.cmd = RESETFAIL;
@@ -257,16 +259,15 @@ void *MyServer::worker_thread_proc(void *args){
 				std::string S1 ="SELECT * FROM parking_lot_";
 				std::string S2 = std::to_string(ctos.parkid);
 				S1 = S1+S2+" ;";
-				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+				if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){
 					MYSQL_RES *result;
 					MYSQL_ROW row;
-					result = mysql_store_result(pthis->m_sql);
+					result = mysql_store_result(m_sql);
 
 				}
-				
-
 			}
 
+			mysql_close(m_sql);
 		}
 		else {
 			pthread_mutex_unlock(&pthis->clientlist_mutex);

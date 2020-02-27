@@ -94,9 +94,9 @@ private:
 
 	std::list<int> clientlist;
 	std::set<int> clientset;
-	MYSQL *m_sql;
-	MYSQL_RES *sql_res;
-	MYSQL_ROW row;
+	//MYSQL *m_sql;
+	//MYSQL_RES *sql_res;
+	//MYSQL_ROW row;
 
 	pthread_mutex_t accept_mutex 	= PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t	clientset_mutex	= PTHREAD_MUTEX_INITIALIZER;
