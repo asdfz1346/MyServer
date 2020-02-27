@@ -1,0 +1,50 @@
+main threadid = 139807573010240
+main threadid = 139817053509440
+connect mysql success
+new client connect fd:6
+connect mysql success
+new client connect fd:6
+new client connect fd:6
+new client connect fd:6
+main threadid = 139761348728640
+connect mysql success
+new client connect fd:6
+new client connect fd:6
+putinfail
+new client connect fd:5
+new client connect fd:5
+putinfail
+putinfail
+putinfail
+putinfail
+putinfail
+putinfail
+putinfail
+putinfail
+new client connect fd:5
+putinfail
+putinfail
+putinfail
+new client connect fd:5
+main threadid = 139984079439680
+connect mysql success
+new client connect fd:6
+new client connect fd:6
+putinfail
+putinsuccess
+new client connect fd:6
+putinfail
+new client connect fd:6
+putinfail
+new client connect fd:6
+putinfail
+new client connect fd:6
+putinfail
+new client connect fd:6
+putinfail
+putinsuccess
+new client connect fd:6
+putinfail
+new client connect fd:6
+putinsuccess
+new client connect fd:6

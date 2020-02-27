@@ -212,17 +212,22 @@ void *MyServer::worker_thread_proc(void *args){
 								memcpy(stoc.intime,row[1],16);
 							if(row[2]!=NULL)
 								memcpy(stoc.outtime,row[2],16);
-							memcpy(snd_buf,&stoc,sizeof stoc);
-							//printf("snd success");
+							memcpy(snd_buf,&stoc,sizeof snd_buf); 
 						}
+						mysql_free_result(result);
 					}
-					stoc.cmd =PUTOUTFAIL;
-					send(fd,&snd_buf,sizeof stoc,0);
+
 				}
+				else{
+					stoc.cmd = PUTOUTFAIL;	
+					memcpy(snd_buf,&stoc,sizeof snd_buf);
+				}
+				send(fd,&snd_buf,sizeof snd_buf,0);
+
 			}
 			if(ctos.cmd==ORDER){
-				//order(1,'carid','tele');
-				std::string S1 = "order(";
+				//call porder(1,'carid','tele');
+				std::string S1 = "call porder(";
                                 std::string S2 = std::to_string(ctos.parkid);
                                 std::string S3 = ctos.carid;
                                 std::string S4 = ctos.tele;
@@ -234,11 +239,38 @@ void *MyServer::worker_thread_proc(void *args){
 				memcpy(snd_buf,&stoc,sizeof stoc);
 				send(fd,&stoc,sizeof stoc,0);
 			}
+			if(ctos.cmd==RESET){
+				//call reset(1);
+				std::string S1 = "call reset(";
+				std::string S2 =std::to_string(ctos.parkid);
+				std::string S3 = ");";
+				S1 = S1+S2+S3;
+				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+					stoc.cmd = RESETSUCCESS;
+				}else
+					stoc.cmd = RESETFAIL;
+				memcpy(snd_buf,&stoc,sizeof stoc);
+				send(fd,&stoc,sizeof stoc,0);
+			}
+			if(ctos.cmd ==QUERY){
+				//SELECT * FROM PARKING-LOT-1;
+				std::string S1 ="SELECT * FROM parking_lot_";
+				std::string S2 = std::to_string(ctos.parkid);
+				S1 = S1+S2+" ;";
+				if(!mysql_query(pthis->m_sql,const_cast<char *>(S1.c_str()))){
+					MYSQL_RES *result;
+					MYSQL_ROW row;
+					result = mysql_store_result(pthis->m_sql);
+
+				}
+				
+
+			}
 
 		}
 		else {
 			pthread_mutex_unlock(&pthis->clientlist_mutex);
-			sleep(0.5);
+			sleep(0.1);
 		}
 	}
 	return NULL;

@@ -31,11 +31,13 @@
 
 
 #define LISTEN_NUM 5
-#define THREAD_NUM 1
+#define THREAD_NUM 10
 //ctos
 #define PUTIN 1
 #define PUTOUT 2
 #define ORDER 3
+#define RESET 4
+#define QUERY 5
 //stoc
 #define PUTINFAIL 0
 #define PUTINSUCCESS 1
@@ -43,6 +45,10 @@
 #define PUTOUTFAIL  3	
 #define ORDERSUCCESS 4
 #define ORDERFAIL 	5
+#define RESETSUCCESS   6
+#define RESETFAIL     7
+#define QUERYSUCCESS	8
+#define QUERYFAIL	9
 
 #ifndef __STRUCT
 #define __STRUCT
