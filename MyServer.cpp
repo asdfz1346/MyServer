@@ -134,8 +134,8 @@ void *MyServer::worker_thread_proc(void *args){
 
 	MyServer *pthis =((ARG*)args)->p;
 	//StoC stoc;
-	char rcv_buf[30];
-	char snd_buf[80];
+	char rcv_buf[SND_BUF_SIZE];
+	char snd_buf[RCV_BUF_SIZE];
 	while(pthis->nstop){
 		//sleep(1);
 		pthread_mutex_lock(&pthis->clientlist_mutex);
@@ -147,8 +147,8 @@ void *MyServer::worker_thread_proc(void *args){
 		        else
 			        printf("connect mysql fail\n");
 
-			memset(rcv_buf,0,sizeof(char)*30);
-			memset(snd_buf, 0,sizeof(char)*80);
+			memset(rcv_buf,0,sizeof rcv_buf);
+			memset(snd_buf, 0,sizeof snd_buf);
 			/*lock clientlist*/
 
 			int fd = pthis->clientlist.front();
@@ -159,7 +159,7 @@ void *MyServer::worker_thread_proc(void *args){
 			recv(fd,&rcv_buf,sizeof rcv_buf,0);
 			CtoS ctos;
 			memset(&ctos,0,sizeof ctos);
-			memcpy(&ctos,rcv_buf,sizeof(char)*30);
+			memcpy(&ctos,rcv_buf,sizeof rcv_buf);
 			//printf("cmd:%dparkid:%dcarid:%s",ctos.cmd,ctos.parkid,ctos.carid);
 			StoC stoc;
 			memset(&stoc,0,sizeof stoc);
@@ -208,6 +208,7 @@ void *MyServer::worker_thread_proc(void *args){
 						//num= mysql_num_fields(result);	
 						while((row = mysql_fetch_row(result))){
 							stoc.cmd = PUTOUTSUCCESS;
+							memcpy(stoc.carid, ctos.carid,sizeof ctos.carid);
 							if(row[0]!=NULL)
 								memcpy(stoc.ordertime,row[0],16);
 							if(row[1]!=NULL)
@@ -263,7 +264,28 @@ void *MyServer::worker_thread_proc(void *args){
 					MYSQL_RES *result;
 					MYSQL_ROW row;
 					result = mysql_store_result(m_sql);
+					while((row = mysql_fetch_row(result))){
+						memset(&stoc,0,sizeof stoc);
+						stoc.cmd=QUERYBACK;
+						if(row[0]!=NULL)//carid
+							memcpy(stoc.carid,row[0],sizeof stoc.carid );
+						if(row[1]!=NULL)//tele
+							memcpy(stoc.tele,row[1],sizeof stoc.tele);
+						if(row[2]!=NULL)//ordertime
+							memcpy(stoc.ordertime,row[2],sizeof stoc.ordertime);
+						if(row[3]!=NULL)//intime
+							memcpy(stoc.intime,row[3],sizeof stoc.intime);
+						if(row[4]!=NULL)//outtime
+							memcpy(stoc.outtime,row[4],sizeof stoc.outtime);
+						memset(snd_buf,0,sizeof snd_buf);
+						memcpy(snd_buf,&stoc,sizeof snd_buf);
+						send(fd,&snd_buf,sizeof snd_buf,0);
+					}
 
+				}
+				else{
+					stoc.cmd = QUERYFAIL;
+					send(fd,&snd_buf,sizeof snd_buf,0);
 				}
 			}
 

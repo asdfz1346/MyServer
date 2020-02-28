@@ -31,7 +31,7 @@
 
 
 #define LISTEN_NUM 5
-#define THREAD_NUM 10
+#define THREAD_NUM 1
 //ctos
 #define PUTIN 1
 #define PUTOUT 2
@@ -39,27 +39,33 @@
 #define RESET 4
 #define QUERY 5
 //stoc
-#define PUTINFAIL 0
-#define PUTINSUCCESS 1
-#define PUTOUTSUCCESS 2
-#define PUTOUTFAIL  3	
-#define ORDERSUCCESS 4
+#define PUTINFAIL 	0
+#define PUTINSUCCESS 	1
+#define PUTOUTSUCCESS 	2
+#define PUTOUTFAIL  	3
+#define ORDERSUCCESS 	4
 #define ORDERFAIL 	5
-#define RESETSUCCESS   6
-#define RESETFAIL     7
+#define RESETSUCCESS  	6
+#define RESETFAIL     	7
 #define QUERYSUCCESS	8
 #define QUERYFAIL	9
+#define QUERYBACK	10
 
+
+#define SND_BUF_SIZE 32
+#define RCV_BUF_SIZE 90
 #ifndef __STRUCT
 #define __STRUCT
 typedef struct msgtoServer{
 	int cmd;
 	int parkid;
-	char carid[8];
+	char carid[12];
 	char tele[12];
 }CtoS;
 typedef struct msgtoClient{
 	int cmd;//0.入库失败，1.返回入库成功 2.出库时间
+	char carid[12];
+	char tele[12];
 	char intime[20];
 	char outtime[20];
 	char ordertime[20];
