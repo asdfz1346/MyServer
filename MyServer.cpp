@@ -93,7 +93,7 @@ void *MyServer::accept_thread_proc(void *args){
 		/*add epoll*/
 		struct epoll_event e;
 		memset (&e,0,sizeof e);
-		e.events = EPOLLIN|EPOLLRDHUP|EPOLLET;
+		e.events = EPOLLIN | EPOLLRDHUP;
 		e.data.fd = newfd;
 		if(epoll_ctl(pthis->epollfd,EPOLL_CTL_ADD,newfd,&e)==-1){
 			std::cout << "epoll_ctl error,\n"<<std::endl;
@@ -137,16 +137,13 @@ void *MyServer::worker_thread_proc(void *args){
 	char rcv_buf[SND_BUF_SIZE];
 	char snd_buf[RCV_BUF_SIZE];
 	while(pthis->nstop){
-		//sleep(1);
 		pthread_mutex_lock(&pthis->clientlist_mutex);
 		if(!pthis->clientlist.empty()){
        			MYSQL *m_conn = mysql_init(NULL);
 	        	MYSQL *m_sql = mysql_real_connect(m_conn,"localhost","root","a123456","PARKING",0,NULL,0);
-		        if(m_sql)
-				printf("connect mysql success\n");
-		        else
+		        if(!m_sql)
 			        printf("connect mysql fail\n");
-
+			
 			memset(rcv_buf,0,sizeof rcv_buf);
 			memset(snd_buf, 0,sizeof snd_buf);
 			/*lock clientlist*/
@@ -156,17 +153,23 @@ void *MyServer::worker_thread_proc(void *args){
 			pthread_mutex_unlock(&pthis->clientlist_mutex);
 			
 			/*recv CtoS msg*/
+			
 			recv(fd,&rcv_buf,sizeof rcv_buf,0);
 			CtoS ctos;
 			memset(&ctos,0,sizeof ctos);
 			memcpy(&ctos,rcv_buf,sizeof rcv_buf);
-			//printf("cmd:%dparkid:%dcarid:%s",ctos.cmd,ctos.parkid,ctos.carid);
+			printf("%ld\n",strlen(rcv_buf));
+			//printf("fd:%d cmd:%dparkid:%dcarid:%s\n",fd,ctos.cmd,ctos.parkid,ctos.carid);
 			StoC stoc;
 			memset(&stoc,0,sizeof stoc);
 			if(ctos.cmd==0){
 				pthread_mutex_lock(&pthis->clientset_mutex);
 				pthis->clientset.erase(fd);
 				pthread_mutex_unlock(&pthis->clientset_mutex);
+				struct epoll_event e;
+				memset (&e,0,sizeof e);
+				e.data.fd = fd;
+				epoll_ctl(pthis->epollfd, EPOLL_CTL_DEL, fd,&e);
 				close(fd);
 			}
 			/*putin*/
