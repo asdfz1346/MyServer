@@ -44,17 +44,19 @@
 #define ORDERFAIL 5
 
 /*buf*/
-#define SND_BUF_SIZE 30
-#define RCV_BUF_SIZE 80
+#define SND_BUF_SIZE 32
+#define RCV_BUF_SIZE 88
 
 typedef struct CtoS{
 	int cmd;
 	int parkid;
-	char carid[8];
+	char carid[12];
 	char tele[12];
 }CtoS;
 typedef struct StoC{
 	int cmd;
+	char carid[12];
+	char tele[12];
 	char intime[20];
 	char outtime[20];
 	char ordertime[20];
