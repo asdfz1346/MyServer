@@ -1,30 +1,27 @@
 #include "client.h"
 #include<iostream>
+using namespace std;
 int main(){
 	client C;
 	CtoS ctos;
 	StoC stoc;
 
-	int fd = C.createsocket("127.0.0.1",12345);
+	int fd = C.createsocket("175.24.5.212",12345);
 	if(fd==-1)return 0;
-	memcpy(&ctos.carid,"CCCCC",8);
-	memcpy(&ctos.tele,"12312312311",12);
-	ctos.cmd = PUTIN;
+	ctos.cmd = 5;
 	ctos.parkid = 1;
-
-	memset(&stoc,0,sizeof stoc);
-	//fd[i] = C.createsocket("127.0.0.1",12345);
-	C.m_send(fd,ctos);
-	stoc = C.m_recv(fd);
-	std::cout << stoc.cmd;
-	if(stoc.cmd==PUTOUTSUCCESS){
-		std::cout << stoc.intime<<std::endl<<stoc.outtime<<std::endl;	
+	memset(&stoc, 0, sizeof stoc);
+	C.m_send(fd, ctos);
+	int num = 0;
+	stoc.cmd = 10;
+	while (stoc.cmd==10) {
+		stoc = C.m_recv(fd);
+		cout << stoc.carid << endl;
+		num++;
 	}
-	if(stoc.cmd==PUTINSUCCESS)
-		std::cout << "PUTINSUCCESS";
-	if(stoc.cmd==3)
-		std::cout << "PUTOUTFAIL";
-	
-
+	cout << num << endl;
+	int i=0;
+	socklen_t  len=10;
+	cout << getsockopt(fd,SOL_SOCKET,SO_SNDLOWAT,&i,&len);
 	return 0;
 }

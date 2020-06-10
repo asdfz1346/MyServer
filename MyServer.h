@@ -38,6 +38,7 @@
 #define ORDER 3
 #define RESET 4
 #define QUERY 5
+#define user_query 	6
 //stoc
 #define PUTINFAIL 	0
 #define PUTINSUCCESS 	1
@@ -50,10 +51,13 @@
 #define QUERYSUCCESS	8
 #define QUERYFAIL	9
 #define QUERYBACK	10
-
-
+#define QUERYOUT	11
+#define login		12
+#define registe		13
+#define loginsuccess	14
+#define loginfail	15
 #define SND_BUF_SIZE 32
-#define RCV_BUF_SIZE 90
+#define RCV_BUF_SIZE 88
 #ifndef __STRUCT
 #define __STRUCT
 typedef struct msgtoServer{
@@ -69,6 +73,7 @@ typedef struct msgtoClient{
 	char intime[20];
 	char outtime[20];
 	char ordertime[20];
+	//char zero[8];
 
 }StoC;
 #endif

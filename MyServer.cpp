@@ -76,7 +76,11 @@ void *MyServer::accept_thread_proc(void *args){
 		int newfd = accept(pthis->listenfd,(struct sockaddr*)&clientaddr,&addrlen);
 		pthread_mutex_unlock(&pthis->accept_mutex);
 		if(newfd==-1) continue;
-		
+		/*set newfd sndbuf*/
+		int nSndBufferLen = 4*1024*1024;
+		int nLen          = sizeof(int);
+		setsockopt(newfd,SOL_SOCKET,SO_SNDBUF,(char*)&nSndBufferLen,nLen);
+
 		/*set newfd non-blocking;*/
 		int oldflag = fcntl(newfd, F_GETFL, 0);
 		int newflag = oldflag | O_NONBLOCK;
@@ -85,7 +89,7 @@ void *MyServer::accept_thread_proc(void *args){
 			continue;
 		}
 		/*insert newfd to the set*/
-		pthread_mutex_lock(&pthis->clientset_mutex);
+	pthread_mutex_lock(&pthis->clientset_mutex);
 		pthis->clientset.insert(newfd);
 		pthread_mutex_unlock(&pthis->clientset_mutex);
 		std::cout << "new client connect fd:"<<newfd<<std::endl;
@@ -155,7 +159,7 @@ void *MyServer::worker_thread_proc(void *args){
 			/*recv CtoS msg*/
 			int num_rcv=0;
 			int allnum_rcv=0;
-			while((num_rcv=recv(fd,&rcv_buf,sizeof rcv_buf,0))>0){
+			while((num_rcv=recv(fd,&rcv_buf,sizeof rcv_buf,0))>=0){
         			allnum_rcv+=num_rcv;	
         			CtoS ctos;
         			memset(&ctos,0,sizeof ctos);
@@ -164,6 +168,18 @@ void *MyServer::worker_thread_proc(void *args){
         			StoC stoc;
         			memset(&stoc,0,sizeof stoc);
 
+				if(ctos.cmd==0){//==0
+        				pthread_mutex_lock(&pthis->clientset_mutex);
+        				pthis->clientset.erase(fd);
+        				pthread_mutex_unlock(&pthis->clientset_mutex);
+       					struct epoll_event e;
+       					memset (&e,0,sizeof e);
+       					e.data.fd = fd;
+					e.events=EPOLLIN;
+       					epoll_ctl(pthis->epollfd, EPOLL_CTL_DEL, fd,&e);
+       					close(fd);
+					printf("duanlian");
+				}
         			/*putin*/
         			if(ctos.cmd==PUTIN){
         				/*putin(1,'S3','S4');*/
@@ -180,10 +196,27 @@ void *MyServer::worker_thread_proc(void *args){
         					//printf("putinsuccess\n");
         				}
         				else{
-        					stoc.cmd =PUTINFAIL;
-        					memcpy(snd_buf,&stoc,sizeof snd_buf);
-        					send(fd,&snd_buf,sizeof snd_buf,0);
-        					//printf("putinfail\n");
+						//call putinupdate(1,'345');
+						S1 = "call putinupdate(";
+						S1 += std::to_string(ctos.parkid);
+						S1+=",'";
+						S1 += ctos.carid;
+						S1 +="');";
+						mysql_close(m_sql);
+						MYSQL *m_conn = mysql_init(NULL);
+						MYSQL *m_sql = mysql_real_connect(m_conn,"localhost","root","a123456","PARKING",0,NULL,0);
+
+						if(!mysql_query(m_sql,const_cast<char *>(S1.c_str()))){
+							std::cout << S1.c_str()<<std::endl;
+							stoc.cmd =PUTINSUCCESS;
+                                        	        memcpy(snd_buf,&stoc,sizeof stoc);
+	   						send(fd,&snd_buf,sizeof snd_buf,0);
+						}else{
+        						stoc.cmd =PUTINFAIL;
+        						memcpy(snd_buf,&stoc,sizeof snd_buf);
+        						send(fd,&snd_buf,sizeof snd_buf,0);
+        						//printf("putinfail\n");
+						}
         				}
         
         				//sql_res = mysql_store_result(&m_sql);
@@ -274,29 +307,75 @@ void *MyServer::worker_thread_proc(void *args){
         							memcpy(stoc.outtime,row[4],sizeof stoc.outtime);
         						memset(snd_buf,0,sizeof snd_buf);
         						memcpy(snd_buf,&stoc,sizeof snd_buf);
-								sleep(0.1);
-        						send(fd,&snd_buf,sizeof snd_buf,0);
+							send(fd,&snd_buf,sizeof snd_buf,0);
+							
         					}
-        
+						if(result!=NULL)
+							mysql_free_result(result);
+						stoc.cmd = QUERYOUT;
+						memcpy(snd_buf,&stoc,sizeof stoc);
+					        send(fd,&snd_buf,sizeof snd_buf,0);	
         				}
         				else{
         					stoc.cmd = QUERYFAIL;
         					send(fd,&snd_buf,sizeof snd_buf,0);
         				}
         			}
+				if(ctos.cmd == registe){
+					std::string S1 = "INSERT INTO user (user_id,user_password) VALUE ('";
+					S1+=ctos.carid;
+					S1+="','";
+					S1+=ctos.tele;
+					S1+="');";
+					mysql_query(m_sql,const_cast<char *>(S1.c_str()));
+				}
+				if(ctos.cmd==login){
+					std::string S1 = "SELECT user_password from user where user_id='";
+					S1+= ctos.carid;
+					S1+="';";
+					mysql_query(m_sql,const_cast<char *>(S1.c_str()));
+					MYSQL_RES *result;
+					MYSQL_ROW row;			
+					result = mysql_store_result(m_sql);
+					stoc.cmd= loginfail;
+					if(row = mysql_fetch_row(result)){
+					if(row[0]!=NULL){
+							std::string SA=ctos.tele;
+							std::string SB=row[0];
+							if(SA==SB){
+								stoc.cmd=loginsuccess;
+							}
+						}
+					}
+					memcpy(snd_buf,&stoc,sizeof stoc);
+					send(fd,&snd_buf,sizeof snd_buf,0);
+				}
+				if(ctos.cmd==user_query){
+					std::string S1 ="select * from parking_lot_info;";
+					mysql_query(m_sql,const_cast<char *>(S1.c_str()));
+					MYSQL_RES *result;
+					MYSQL_ROW row;
+					result = mysql_store_result(m_sql);
+					while((row = mysql_fetch_row(result))){
+        					memset(&stoc,0,sizeof stoc);
+        					stoc.cmd=QUERYBACK;
+        					if(row[0]!=NULL)//parkid
+        						memcpy(stoc.carid,row[0], strlen(row[0]) );
+        					if(row[1]!=NULL)//tele
+        						memcpy(stoc.tele,row[1],strlen(row[1]));
+        					if(row[2]!=NULL)//allnum
+        						memcpy(stoc.ordertime,row[2],strlen(row[2]));
+        					if(row[3]!=NULL)//nownum
+        						memcpy(stoc.intime,row[3],strlen(row[3]));
+        					if(row[4]!=NULL)//addr
+        						memcpy(stoc.outtime,row[4],strlen(row[4]));
+        					memset(snd_buf,0,sizeof snd_buf);
+        					memcpy(snd_buf,&stoc,sizeof snd_buf);
+						send(fd,&snd_buf,sizeof snd_buf,0);	
+        				}
+				}
 			}
         		mysql_close(m_sql);
-			if(allnum_rcv<0){//==0
-        			pthread_mutex_lock(&pthis->clientset_mutex);
-        			pthis->clientset.erase(fd);
-        			pthread_mutex_unlock(&pthis->clientset_mutex);
-       				struct epoll_event e;
-       				memset (&e,0,sizeof e);
-       				e.data.fd = fd;
-       				//epoll_ctl(pthis->epollfd, EPOLL_CTL_DEL, fd,&e);
-       				close(fd);
-				printf("duanlian");
-			}
 
 		}
 		else {
